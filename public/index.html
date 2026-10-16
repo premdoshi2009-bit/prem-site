@@ -127,7 +127,7 @@ footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
 
 @media (max-width:820px){
   .room-body{grid-template-columns:minmax(0,1fr)}
-  .notes{position:static;border-left:none;border-top:1px solid currentColor;padding-left:0;padding-top:14px;order:2}
+  .notes{position:static;border-left:none;border-top:1px solid currentColor;border-bottom:1px solid currentColor;padding:12px 0;min-height:0}
   .room-head{grid-template-columns:minmax(0,1fr)}
   .room-head .big{text-align:left}
   .preview{grid-template-columns:minmax(0,1fr)}
@@ -205,6 +205,10 @@ const byId = Object.fromEntries(ROOMS.map(r=>[r.id,r]));
 const $ = id => document.getElementById(id);
 const canHover = matchMedia('(hover:hover)').matches;
 const root = document.documentElement;
+const narrow = matchMedia('(max-width:820px)');
+const HINT = canHover
+  ? 'Hover any underlined phrase to preview it. Click to go in. Inside, underlined words open notes in the margin.'
+  : 'Tap any underlined phrase to go in. Inside, tap underlined words for a short note.';
 
 function paint(r){
   document.body.style.setProperty('--bg', r ? r.bg : 'var(--base-bg)');
@@ -235,17 +239,16 @@ function reset(){
   $('home').classList.remove('home-hot');
   paint(null);
   $('pv-stat').textContent='4'; $('pv-kicker').textContent='Ways in';
-  $('pv-text').textContent='Hover any underlined phrase to preview it. Click to go in. Inside, underlined words open notes in the margin.';
+  $('pv-text').textContent=HINT;
   $('pv-go').hidden=true;
 }
-document.querySelectorAll('#home [data-room]').forEach(el=>{
-  el.addEventListener('mouseenter',()=>preview(el.dataset.room));
-  el.addEventListener('focus',()=>preview(el.dataset.room));
-  el.addEventListener('mouseleave',()=>{ leaveT=setTimeout(reset,220); });
-  el.addEventListener('click',e=>{
-    if(!canHover && active!==el.dataset.room){ e.preventDefault(); preview(el.dataset.room); }
+if(canHover){
+  document.querySelectorAll('#home [data-room]').forEach(el=>{
+    el.addEventListener('mouseenter',()=>preview(el.dataset.room));
+    el.addEventListener('focus',()=>preview(el.dataset.room));
+    el.addEventListener('mouseleave',()=>{ leaveT=setTimeout(reset,220); });
   });
-});
+}
 
 /* rooms */
 function noteDefault(){ return `<span class="k">Notes</span><span class="t">Margin</span><p>${canHover?'Hover':'Tap'} an underlined word for a short explanation.</p>`; }
@@ -272,6 +275,7 @@ function renderRoom(r){
     t.tabIndex=0;
     const show=()=>{
       el.querySelectorAll('.term').forEach(x=>x.classList.toggle('on',x===t));
+      if(narrow.matches){ const host=t.closest('p, .item'); if(host && host.nextElementSibling!==notes) host.after(notes); }
       notes.innerHTML=`<span class="k">Note</span><span class="t">${t.dataset.k}</span><p>${t.dataset.n}</p>`;
       notes.classList.remove('swap'); void notes.offsetWidth; notes.classList.add('swap');
     };
