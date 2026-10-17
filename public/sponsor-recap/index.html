@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Monthly ad recaps and renewal emails for local newsletter sponsors. Demo with sample data.">
+<link rel="icon" href="/favicon.ico">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Sponsor Recap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: operator sidebar (sponsors for the month) beside the sponsor-facing recap and the renewal email it drafts. Stacks on phones. */
+:root{
+  --bg:#F4F6F3; --surface:#FFFFFF; --ink:#15201B; --muted:#5A6760; --line:#DCE2DD;
+  --accent:#1E6B4B; --accent-soft:#E2EFE7; --warn:#8F5600; --warn-soft:#FAEED8;
+  --info:#2A5A87; --info-soft:#E2EBF5; --bar:#1E6B4B; --bar-track:#E8ECE9;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Public Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1411; --surface:#161F1A; --ink:#E5ECE7; --muted:#9BA9A1; --line:#29352F;
+    --accent:#5BC293; --accent-soft:#1B3127; --warn:#EDB45A; --warn-soft:#382A13;
+    --info:#8CB6E4; --info-soft:#1B2939; --bar:#5BC293; --bar-track:#223029;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1411; --surface:#161F1A; --ink:#E5ECE7; --muted:#9BA9A1; --line:#29352F;
+  --accent:#5BC293; --accent-soft:#1B3127; --warn:#EDB45A; --warn-soft:#382A13;
+  --info:#8CB6E4; --info-soft:#1B2939; --bar:#5BC293; --bar-track:#223029;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 48px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-0.01em}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.label{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.brand h1{font-size:24px}
+.brand span{color:var(--muted);font-size:14px}
+.demo{background:var(--info-soft);color:var(--info);font-size:13px;padding:6px 12px;border-radius:999px;font-weight:500}
+
+.app{display:grid;grid-template-columns:300px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:880px){.app{grid-template-columns:minmax(0,1fr)}}
+
+/* sidebar */
+.side{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.months{display:flex;gap:6px;background:var(--bg);padding:4px;border-radius:9px}
+.months button{flex:1;border:0;background:transparent;padding:7px 8px;border-radius:7px;font-weight:600;font-size:14px;color:var(--muted)}
+.months button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.summary div{display:flex;flex-direction:column;gap:2px}
+.summary .num{font-size:20px}
+.list{display:flex;flex-direction:column;gap:6px}
+.sp{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:10px 12px}
+.sp:hover{border-color:var(--muted)}
+.sp[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.sp .nm{font-weight:600;min-width:0}
+.sp .plan{grid-column:1;color:var(--muted);font-size:13px}
+.sp .clk{grid-row:1;grid-column:2;text-align:right;font-size:14px}
+.sp .pillcell{grid-column:2;grid-row:2;text-align:right}
+.pill{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.pill.due{background:var(--warn-soft);color:var(--warn)}
+.pill.ok{background:var(--accent-soft);color:var(--accent)}
+.pill.new{background:var(--info-soft);color:var(--info)}
+.sp[aria-pressed="true"] .pill.ok{background:var(--surface)}
+
+/* main */
+.main{display:flex;flex-direction:column;gap:20px;min-width:0}
+.panelhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.panelhead p{margin:0;color:var(--muted);font-size:13.5px}
+
+.report{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.rhead{padding:22px 24px 18px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.rhead .from{color:var(--muted);font-size:13.5px}
+.rhead h2{font-size:30px;line-height:1.15}
+.rhead .sub{color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid var(--line)}
+.stats > div{padding:16px 24px;display:flex;flex-direction:column;gap:4px;border-right:1px solid var(--line);min-width:0}
+.stats > div:last-child{border-right:0}
+.stats .num{font-size:26px;line-height:1.1}
+.stats .hint{font-size:12.5px;color:var(--muted)}
+@media (max-width:640px){
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stats > div:nth-child(2){border-right:0}
+  .stats > div:nth-child(-n+2){border-bottom:1px solid var(--line)}
+}
+.compare{margin:18px 24px 0;padding:12px 14px;border-radius:9px;font-size:14.5px}
+.compare.up{background:var(--accent-soft);color:var(--ink)}
+.compare.down{background:var(--warn-soft);color:var(--ink)}
+.compare.flat{background:var(--bg);color:var(--ink)}
+.compare b{font-weight:600}
+.issues{padding:18px 24px 22px;display:flex;flex-direction:column;gap:12px}
+.issues h3{font-size:16px}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(90px,38%) 52px;gap:12px;align-items:center}
+.row .what{min-width:0}
+.row .d{font-size:12.5px;color:var(--muted)}
+.row .t{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track{height:10px;background:var(--bar-track);border-radius:5px;overflow:hidden}
+.fill{height:100%;background:var(--bar);border-radius:5px}
+.row .num{text-align:right;font-size:14px}
+.row.best .t{font-weight:600}
+.bestnote{font-size:12px;color:var(--accent);font-weight:600}
+@media (max-width:520px){.row{grid-template-columns:minmax(0,1fr) 46px}.row .track{grid-column:1 / -1;grid-row:2}}
+.rfoot{padding:12px 24px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+
+.empty{padding:28px 24px;color:var(--muted)}
+
+.email{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.email pre{margin:0;white-space:pre-wrap;word-wrap:break-word;font-family:var(--body);font-size:14.5px;line-height:1.6;background:var(--bg);border-radius:9px;padding:14px 16px}
+.copy{border:1px solid var(--accent);background:var(--accent);color:var(--surface);padding:7px 14px;border-radius:8px;font-weight:600;font-size:14px}
+.copy:hover{filter:brightness(1.08)}
+
+.how{background:transparent;border:1px dashed var(--line);border-radius:12px;padding:14px 18px;color:var(--muted);font-size:13.5px}
+.how ol{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:2px}
+@media (prefers-reduced-motion:no-preference){.fill{transition:width .4s ease}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><h1>Sponsor Recap</h1><span>Monthly ad reports and renewals for local newsletters</span></div>
+    <div class="demo">Demo: sample newsletter, made-up businesses and numbers</div>
+  </header>
+
+  <div class="app">
+    <aside class="side" aria-label="Sponsors">
+      <div class="label">The Valley Dispatch</div>
+      <div class="months" id="months"></div>
+      <div class="summary" id="summary"></div>
+      <div class="label">Sponsors this month</div>
+      <div class="list" id="list"></div>
+    </aside>
+
+    <main class="main">
+      <div class="panelhead">
+        <div class="label">What the sponsor sees</div>
+        <p>Built from beehiiv's click data. No spreadsheets.</p>
+      </div>
+      <section class="report" id="report" aria-live="polite"></section>
+
+      <section class="email">
+        <div class="panelhead">
+          <div class="label">Renewal email, ready to send</div>
+          <button class="copy" id="copy" type="button">Copy email</button>
+        </div>
+        <pre id="emailText"></pre>
+      </section>
+
+      <div class="how">
+        <b style="color:var(--ink)">How the real version would work</b>
+        <ol>
+          <li>Connect your beehiiv account once.</li>
+          <li>Tag which links belong to which sponsor (it remembers them).</li>
+          <li>On the 1st of each month, every sponsor gets a recap and you get a renewal email to send.</li>
+        </ol>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+const NEWSLETTER = { name: "The Valley Dispatch", editor: "Alex" };
+
+// Each issue: date, headline, inboxes delivered, unique opens
+const ISSUES = {
+  "2026-08-03": ["Summer concert series wraps Thursday", 8102, 4150],
+  "2026-08-05": ["Pool hours cut for the August heat", 8110, 4065],
+  "2026-08-10": ["Council adds crosswalks on Franklin Ave", 8134, 4290],
+  "2026-08-12": ["Three new restaurants opening this fall", 8140, 4588],
+  "2026-08-17": ["Back-to-school supply drive", 8166, 4201],
+  "2026-08-19": ["Farmers market adds Sunday hours", 8170, 4302],
+  "2026-08-24": ["Bus routes for the new school year", 8198, 4870],
+  "2026-08-26": ["Rec soccer sign-ups close Friday", 8205, 4410],
+  "2026-09-02": ["First day of school traffic plan", 8240, 4930],
+  "2026-09-09": ["Planning board hears Route 17 plaza plan", 8262, 4512],
+  "2026-09-14": ["Fall festival lineup announced", 8280, 4744],
+  "2026-09-16": ["Library renovation timeline", 8291, 4187],
+  "2026-09-21": ["New dog park opens Saturday", 8305, 4620],
+  "2026-09-23": ["Homecoming parade route", 8318, 4466],
+  "2026-09-28": ["Leaf pickup starts Oct 5", 8330, 4398],
+  "2026-09-30": ["Meet the school board candidates", 8344, 4801]
+};
+
+// Average click rate (clicks / opens) for each kind of ad spot in this newsletter
+const SLOTS = {
+  top:        { label: "top sponsor spot", plural: "top sponsor spots", avg: 0.045 },
+  listing:    { label: "featured listing", plural: "featured listings", avg: 0.023 },
+  mid:        { label: "mid-issue ad", plural: "mid-issue ads", avg: 0.024 },
+  classified: { label: "classified ad", plural: "classified ads", avg: 0.010 }
+};
+
+const SPONSORS = [
+  { id: "basil", name: "Brick & Basil Pizzeria", contact: "Marco", slot: "top", price: 275,
+    status: { aug: ["ok","Active"], sep: ["due","Renewal due"] },
+    runs: { aug: [["2026-08-03",162],["2026-08-12",241],["2026-08-19",178],["2026-08-26",190]],
+            sep: [["2026-09-02",224],["2026-09-14",263],["2026-09-21",247],["2026-09-28",181]] } },
+  { id: "halverson", name: "Halverson Home Team", contact: "Dana", slot: "listing", price: 150,
+    status: { aug: ["ok","Active"], sep: ["ok","Through Dec"] },
+    runs: { aug: [["2026-08-05",96],["2026-08-12",131],["2026-08-19",88],["2026-08-26",102]],
+            sep: [["2026-09-09",119],["2026-09-16",84],["2026-09-23",142],["2026-09-30",127]] } },
+  { id: "northside", name: "Northside Pediatric Dental", contact: "Dr. Patel", slot: "mid", price: 180,
+    status: { sep: ["new","First month"] },
+    runs: { sep: [["2026-09-02",118],["2026-09-16",73]] } },
+  { id: "ridge", name: "Ridge Climbing Gym", contact: "Sam", slot: "classified", price: 60,
+    status: { aug: ["ok","Active"], sep: ["due","Renewal due"] },
+    runs: { aug: [["2026-08-10",41],["2026-08-17",36],["2026-08-24",58]],
+            sep: [["2026-09-09",47],["2026-09-21",62],["2026-09-28",39]] } }
+];
+
+const MONTHS = [
+  { key: "aug", name: "August", next: "September" },
+  { key: "sep", name: "September", next: "October" }
+];
+
+let state = { month: "sep", sponsor: "basil" };
+const $ = id => document.getElementById(id);
+const fmt = n => n.toLocaleString("en-US");
+const pct = n => (n * 100).toFixed(1) + "%";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function dayLabel(iso, withDay = true) {
+  const d = new Date(iso + "T12:00:00");
+  return d.toLocaleDateString("en-US", withDay ? { weekday: "short", month: "short", day: "numeric" } : { month: "short", day: "numeric" });
+}
+const monthObj = k => MONTHS.find(m => m.key === k);
+const prevKey = k => { const i = MONTHS.findIndex(m => m.key === k); return i > 0 ? MONTHS[i - 1].key : null; };
+
+function stats(s, mk) {
+  const runs = (s.runs[mk] || []).map(([iso, clicks]) => {
+    const [title, delivered, opens] = ISSUES[iso];
+    return { iso, title, delivered, opens, clicks };
+  });
+  if (!runs.length) return null;
+  const sum = k => runs.reduce((a, r) => a + r[k], 0);
+  const delivered = sum("delivered"), opens = sum("opens"), clicks = sum("clicks");
+  const best = runs.reduce((a, r) => (r.clicks > a.clicks ? r : a), runs[0]);
+  return { runs, delivered, opens, clicks, rate: clicks / opens, best, n: runs.length };
+}
+
+function renderMonths() {
+  $("months").innerHTML = MONTHS.map(m =>
+    `<button type="button" id="m-${m.key}" aria-pressed="${m.key === state.month}" data-m="${m.key}">${m.name} 2026</button>`).join("");
+  $("months").querySelectorAll("button").forEach(b => b.onclick = () => { state.month = b.dataset.m; render(); });
+}
+
+function renderSidebar() {
+  const active = SPONSORS.filter(s => s.runs[state.month]);
+  const booked = active.reduce((a, s) => a + s.price * s.runs[state.month].length, 0);
+  const due = active.filter(s => s.status[state.month] && s.status[state.month][0] === "due").length;
+  $("summary").innerHTML = `
+    <div><span class="label">Ad revenue</span><span class="num">$${fmt(booked)}</span></div>
+    <div><span class="label">Renewals due</span><span class="num">${due}</span></div>`;
+  $("list").innerHTML = SPONSORS.map(s => {
+    const st = stats(s, state.month);
+    const pill = s.status[state.month];
+    return `<button type="button" class="sp" id="sp-${s.id}" data-s="${s.id}" aria-pressed="${s.id === state.sponsor}">
+      <span class="nm">${esc(s.name)}</span>
+      <span class="clk num">${st ? fmt(st.clicks) + " clicks" : "&ndash;"}</span>
+      <span class="plan">${st ? st.n + " &times; " + SLOTS[s.slot].label : "No ads this month"}</span>
+      <span class="pillcell">${pill ? `<span class="pill ${pill[0]}">${pill[1]}</span>` : ""}</span>
+    </button>`;
+  }).join("");
+  $("list").querySelectorAll("button").forEach(b => b.onclick = () => { state.sponsor = b.dataset.s; render(); });
+}
+
+function renderReport(s, st) {
+  const m = monthObj(state.month);
+  const slot = SLOTS[s.slot];
+  if (!st) {
+    $("report").innerHTML = `<div class="rhead"><div class="from">${NEWSLETTER.name} &middot; Sponsor recap</div><h2>${esc(s.name)}</h2></div>
+      <div class="empty">No ads ran for ${esc(s.name)} in ${m.name}. Their first ad ran in September. Switch to September to see their recap.</div>`;
+    return;
+  }
+  const diff = st.rate / slot.avg - 1;
+  let cls = "flat", msg = `Your click rate was <b>${pct(st.rate)}</b>, right in line with the ${pct(slot.avg)} average for ${slot.plural} in ${NEWSLETTER.name}.`;
+  if (diff >= 0.05) { cls = "up"; msg = `Your click rate was <b>${pct(st.rate)}</b>, which is <b>${Math.round(diff * 100)}% higher</b> than the ${pct(slot.avg)} average for ${slot.plural} in ${NEWSLETTER.name}.`; }
+  else if (diff <= -0.05) { cls = "down"; msg = `Your click rate was <b>${pct(st.rate)}</b>, a bit under the ${pct(slot.avg)} average for ${slot.plural}. Top sponsor spots have averaged ${pct(SLOTS.top.avg)}.`; }
+  const max = Math.max(...st.runs.map(r => r.clicks));
+  const rows = st.runs.map(r => `
+    <div class="row${r === st.best ? " best" : ""}">
+      <div class="what"><div class="d">${dayLabel(r.iso)}${r === st.best ? ' &middot; <span class="bestnote">Best issue</span>' : ""}</div><div class="t" title="${esc(r.title)}">${esc(r.title)}</div></div>
+      <div class="track" aria-hidden="true"><div class="fill" style="width:${(r.clicks / max * 100).toFixed(1)}%"></div></div>
+      <div class="num">${fmt(r.clicks)}</div>
+    </div>`).join("");
+  $("report").innerHTML = `
+    <div class="rhead">
+      <div class="from">${NEWSLETTER.name} &middot; Sponsor recap</div>
+      <h2>${esc(s.name)}</h2>
+      <div class="sub">${m.name} 2026 &middot; ${st.n} ${st.n === 1 ? slot.label : slot.plural}</div>
+    </div>
+    <div class="stats">
+      <div><span class="label">Issues</span><span class="num">${st.n}</span><span class="hint">your ad appeared in</span></div>
+      <div><span class="label">Inboxes</span><span class="num">${fmt(st.delivered)}</span><span class="hint">local subscribers reached</span></div>
+      <div><span class="label">Opened</span><span class="num">${fmt(st.opens)}</span><span class="hint">times readers opened it</span></div>
+      <div><span class="label">Clicks</span><span class="num">${fmt(st.clicks)}</span><span class="hint">visits to your site</span></div>
+    </div>
+    <div class="compare ${cls}">${msg}</div>
+    <div class="issues"><h3>Clicks by issue</h3>${rows}</div>
+    <div class="rfoot">Clicks are unique readers who clicked your link, as counted by beehiiv. Sample data for this demo.</div>`;
+}
+
+function emailText(s, st) {
+  const m = monthObj(state.month);
+  const slot = SLOTS[s.slot];
+  if (!st) return `No ads ran for ${s.name} in ${m.name}, so there is nothing to recap yet.`;
+  const diff = st.rate / slot.avg - 1;
+  const lines = [];
+  lines.push(`Subject: Your ${m.name} results in ${NEWSLETTER.name}`, "");
+  lines.push(`Hi ${s.contact},`, "");
+  lines.push(`Here's how your ${st.n === 1 ? slot.label : slot.plural} did in ${m.name}. Your ad ran in ${st.n} issues and was opened ${fmt(st.opens)} times by local readers, and ${fmt(st.clicks)} people clicked through to your site.`);
+  const pk = prevKey(state.month), prev = pk ? stats(s, pk) : null;
+  let extra = [];
+  if (diff >= 0.05) extra.push(`That click rate is ${Math.round(diff * 100)}% higher than the average for ${slot.plural} in the newsletter.`);
+  else if (diff <= -0.05) extra.push(`That's a little under the average for ${slot.plural}. Top sponsor spots have been getting about ${Math.round(SLOTS.top.avg / slot.avg * 10) / 10}x the click rate, if you want to try one next month.`);
+  else extra.push(`That's right in line with the average for ${slot.plural} in the newsletter.`);
+  extra.push(`Your best issue was ${dayLabel(st.best.iso, false)} ("${st.best.title}"), with ${fmt(st.best.clicks)} clicks.`);
+  if (prev) {
+    const change = st.clicks - prev.clicks;
+    if (change > 0) extra.push(`That's up from ${fmt(prev.clicks)} clicks in ${monthObj(pk).name}.`);
+    else if (change < 0) extra.push(`That's a little down from ${fmt(prev.clicks)} clicks in ${monthObj(pk).name}.`);
+  }
+  lines.push("", extra.join(" "), "");
+  const total = s.price * st.n;
+  const status = s.status[state.month];
+  if (status && status[0] === "ok") lines.push(`You're already booked for ${m.next}, so nothing to do. I'll send next month's numbers on the 1st.`);
+  else lines.push(`Want to keep the same plan for ${m.next}? It's ${st.n} ${slot.plural} for $${fmt(total)}. Reply "yes" and I'll lock in your dates.`);
+  lines.push("", "Your full recap: [link to this report]", "", "Thanks for supporting local news,", NEWSLETTER.editor, NEWSLETTER.name);
+  return lines.join("\n");
+}
+
+function render() {
+  const s = SPONSORS.find(x => x.id === state.sponsor);
+  const st = stats(s, state.month);
+  renderMonths();
+  renderSidebar();
+  renderReport(s, st);
+  $("emailText").textContent = emailText(s, st);
+  $("copy").textContent = "Copy email";
+}
+
+$("copy").onclick = async () => {
+  const text = $("emailText").textContent;
+  try { await navigator.clipboard.writeText(text); $("copy").textContent = "Copied"; }
+  catch (e) {
+    const r = document.createRange(); r.selectNodeContents($("emailText"));
+    const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    $("copy").textContent = "Selected, press Ctrl+C";
+  }
+};
+
+render();
+</script>
+
+</body>
+</html>
